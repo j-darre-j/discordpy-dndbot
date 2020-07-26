@@ -1,4 +1,5 @@
 # bot.py
+# imports for various discord.py functions and existing python functions
 import os
 import random
 import discord
@@ -6,16 +7,20 @@ from discord.ext import commands
 from discord.utils import get
 from dotenv import load_dotenv
 
+# ENV file to securely process discord token information.
 load_dotenv()
 TOKEN = os.getenv('DISCORD_TOKEN')
 GUILD = os.getenv('DISCORD_GUILD')
 
 client = discord.Client()
-bot = commands.Bot(command_prefix='!')
-bot.remove_command('help')
+bot = commands.Bot(command_prefix='!') # defining bot command prefix (ie: "!help")
+bot.remove_command('help') # removing default "!help" command
+
+# Role definition for assigning user roles.
 init_role = "Aspiring Applicant"
 accept_role = "Accepted Applicant"
 
+# Print to console that bot has connected
 @bot.event
 async def on_ready():
     guild = discord.Guild
@@ -23,11 +28,9 @@ async def on_ready():
         if guild.name == GUILD:
             break
 
-    print (
-        f'{client.user} is connected to the following guild:\n'
-        f'{guild.name}(id: {guild.id})'
-    )
+    print (f'Bot is connected to the server!')
 
+# When a member joins, display a message then assign a nickname and a role. Also check to ensure message is sent to the correct channel.
 @bot.event
 async def on_member_join(member):
     role = get(member.guild.roles, name = init_role)
@@ -43,6 +46,7 @@ async def on_member_join(member):
         if str(channel) == "incoming-transmission": # Checking message will be in #incoming-transmission      
             await channel.send(embed=init_embed)
 
+# Remade 'help' command, formatted into a nice embed message.
 @bot.command(pass_context=True)
 async def help(ctx):
         embed = discord.Embed(title="TERMINAL COMMANDS", description="!help will refresh this page.")
@@ -54,17 +58,7 @@ async def help(ctx):
         embed.add_field(name="!purge", value="Deletes all messages in a channel. Please be careful with this.")
         await ctx.send(content=None, embed=embed)
         
-@bot.command(pass_context = True)
-async def init(ctx):
-    await ctx.channel.purge(limit = 1)
-    init_embed=discord.Embed(title="Subject: Potential Employment", colour=discord.Colour(0x3DC8FF), description="Hello, this job invitation is the beginning of our correspondance. "
-                             "Accepting this message implies that you are accepting employment from Regal Enterprises. Employment is subject to immediate termination if found in violation of company policy. Do you __**!accept**__ or __**!deny**__?")
-    init_embed.set_thumbnail(url="https://cblproperty.blob.core.windows.net/production/assets/blt93f46e23c3b4b3d1-Regal_Cinemas_Logo.png")
-    init_embed.set_author(name="From: REGAL ENTERPRISES", icon_url="https://cblproperty.blob.core.windows.net/production/assets/blt93f46e23c3b4b3d1-Regal_Cinemas_Logo.png")
-    init_embed.set_footer(text="All correspondance should be contained to your private computer. Sharing this information will result in termination. "
-                          "By reading this disclaimer, you agree to abide by these terms and conditions.", icon_url="https://cblproperty.blob.core.windows.net/production/assets/blt93f46e23c3b4b3d1-Regal_Cinemas_Logo.png")
-    await ctx.send(embed=init_embed)
-
+# When user types "!accept", print message and change role
 @bot.command(pass_context = True)
 async def accept(ctx):
     role = get(ctx.guild.roles, name = accept_role)
@@ -82,17 +76,19 @@ async def accept(ctx):
     await user.add_roles(role)
     await user.remove_roles(role_first)
     
+# If user types "!deny", open DM with user and kick them from the server. Then purge all messages in channel.
 @bot.command(pass_context=True)
 async def deny(ctx, amount = 500):
-    user2 = ctx.message.author
-    await user2.create_dm()
+    user2 = ctx.message.author # Defines user as the message author
+    await user2.create_dm() # Creates DM
     goodbye_embed=discord.Embed(title="From: REGAL ENTERPRISES", description="Subject: Employment Denied", color=0xFF2E3B)
     goodbye_embed.set_footer(text="Regal thanks you for your interest. At your request, you have denied employment. All communications will now cease. Good bye.")
     await user2.send(embed=goodbye_embed)
     await ctx.guild.kick(user2) 
-    await ctx.channel.purge(limit = amount)
-    await ctx.send(f'Regal has purged {user2.display_name} from all available records.')  
+    await ctx.channel.purge(limit = amount) 
+    await ctx.send(f'Regal has purged {user2.display_name} from all available records.') # Validate purge and kick was successful (no exception handling)
 
+# Prints a stupid funfact. Made to test embed messages and commands. Chooses a quote at random.
 @bot.command(name='funfact')
 async def fun_fact(ctx):
     global terminal_quotes
@@ -122,11 +118,13 @@ async def fun_fact(ctx):
     ]
     response = random.choice(terminal_quotes)
     await ctx.send(response)
-    
+  
+# Deletes all messages in a channel.  
 @bot.command(pass_context = True)
 async def purge(ctx):
     await ctx.channel.purge()
     
+# Test command to see how arguments are parsed by the bots.
 @bot.command(pass_context=True)
 async def info(ctx, *args):
     await ctx.send('{} The information you provided is: {}'.format(len(args), ', '.join(args)))
